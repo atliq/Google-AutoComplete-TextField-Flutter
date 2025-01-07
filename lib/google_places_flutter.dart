@@ -2,17 +2,16 @@ library google_places_flutter;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_places_flutter/model/place_details.dart';
 import 'package:google_places_flutter/model/place_type.dart';
 import 'package:google_places_flutter/model/prediction.dart';
 
-import 'package:rxdart/subjects.dart';
 import 'package:dio/dio.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'DioErrorHandler.dart';
 
+// ignore: must_be_immutable
 class GooglePlaceAutoCompleteTextField extends StatefulWidget {
   InputDecoration inputDecoration;
   ItemClick? itemClick;
@@ -39,11 +38,11 @@ class GooglePlaceAutoCompleteTextField extends StatefulWidget {
   GooglePlaceAutoCompleteTextField(
       {required this.textEditingController,
       required this.googleAPIKey,
-      this.debounceTime: 600,
-      this.inputDecoration: const InputDecoration(),
+      this.debounceTime = 600,
+      this.inputDecoration = const InputDecoration(),
       this.itemClick,
       this.isLatLngRequired = true,
-      this.textStyle: const TextStyle(),
+      this.textStyle = const TextStyle(),
       this.countries,
       this.getPlaceDetailWithLatLng,
       this.itemBuilder,
@@ -54,7 +53,8 @@ class GooglePlaceAutoCompleteTextField extends StatefulWidget {
       this.containerHorizontalPadding,
       this.containerVerticalPadding,
       this.focusNode,
-      this.placeType,this.language='en'});
+      this.placeType,
+      this.language = 'en'});
 
   @override
   _GooglePlaceAutoCompleteTextFieldState createState() =>
@@ -151,10 +151,6 @@ class _GooglePlaceAutoCompleteTextFieldState
       String proxyURL = "https://cors-anywhere.herokuapp.com/";
       String url = kIsWeb ? proxyURL + apiURL : apiURL;
 
-      /// Add the custom header to the options
-      final options = kIsWeb
-          ? Options(headers: {"x-requested-with": "XMLHttpRequest"})
-          : null;
       Response response = await _dio.get(url);
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
@@ -181,7 +177,7 @@ class _GooglePlaceAutoCompleteTextFieldState
 
       this._overlayEntry = null;
       this._overlayEntry = this._createOverlayEntry();
-      Overlay.of(context)!.insert(this._overlayEntry!);
+      Overlay.of(context).insert(this._overlayEntry!);
     } catch (e) {
       var errorHandler = ErrorHandler.internal().handleError(e);
       _showSnackBar("${errorHandler.message}");
@@ -199,11 +195,16 @@ class _GooglePlaceAutoCompleteTextFieldState
   }
 
   textChanged(String text) async {
+    if (text.trim().length == 0) {
+      alPredictions.clear();
+      this._overlayEntry!.remove();
+      return;
+    }
     getLocation(text);
   }
 
   OverlayEntry? _createOverlayEntry() {
-    if (context != null && context.findRenderObject() != null) {
+    if (context.findRenderObject() != null) {
       RenderBox renderBox = context.findRenderObject() as RenderBox;
       var size = renderBox.size;
       var offset = renderBox.localToGlobal(Offset.zero);
@@ -248,15 +249,14 @@ class _GooglePlaceAutoCompleteTextFieldState
                 ),
               ));
     }
+    return null;
   }
 
   removeOverlay() {
     alPredictions.clear();
     this._overlayEntry = this._createOverlayEntry();
-    if (context != null) {
-      Overlay.of(context).insert(this._overlayEntry!);
-      this._overlayEntry!.markNeedsBuild();
-    }
+    Overlay.of(context).insert(this._overlayEntry!);
+    this._overlayEntry!.markNeedsBuild();
   }
 
   Future<Response?> getPlaceDetailsFromPlaceId(Prediction prediction) async {
@@ -279,6 +279,7 @@ class _GooglePlaceAutoCompleteTextFieldState
       var errorHandler = ErrorHandler.internal().handleError(e);
       _showSnackBar("${errorHandler.message}");
     }
+    return null;
   }
 
   void clearData() {
